@@ -18,6 +18,7 @@ Singleton {
   property bool directoriesCreated: false
   property bool shouldOpenSetupWizard: false
   property bool isFreshInstall: false
+  property bool splashRunning: true
 
   /*
   Shell directories.
@@ -406,7 +407,6 @@ Singleton {
       property bool showCategories: true
       // Icon mode: "tabler" or "native"
       property string iconMode: "tabler"
-      property bool ignoreMouseInput: false
     }
 
     // control center
@@ -495,7 +495,6 @@ Singleton {
       property string warningColor: ""
       property string criticalColor: ""
       property string diskPath: "/"
-      property string externalMonitor: "resources || missioncenter || jdsystemmonitor || corestats || system-monitoring-center || gnome-system-monitor || plasma-systemmonitor || mate-system-monitor || ukui-system-monitor || deepin-system-monitor || pantheon-system-monitor"
     }
 
     // dock
