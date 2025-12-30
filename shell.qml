@@ -41,6 +41,10 @@ ShellRoot {
   property bool settingsLoaded: false
   property bool shellStateLoaded: false
 
+  StartupScreen {
+    id: startupScreen
+  }
+
   Component.onCompleted: {
     Logger.i("Shell", "---------------------------");
     Logger.i("Shell", "Noctalia Hello!");
@@ -157,6 +161,7 @@ ShellRoot {
       FontService.init();
       UpdateService.init();
       UpdateService.showLatestChangelog();
+      Settings.splashRunning = false;
     }
   }
 
@@ -166,7 +171,7 @@ ShellRoot {
   Timer {
     id: setupWizardTimer
     running: false
-    interval: 2000
+    interval: 500
     onTriggered: {
       showSetupWizard();
     }
