@@ -18,13 +18,19 @@ Loader {
 
   // Keep loaded until fade-out completes
   active: opacity > 0.0
-  opacity: shouldBeActive ? 1.0 : 0.0
+  
+  property real targetOpacity: shouldBeActive ? 1.0 : 0.0
+  opacity: 0.0
 
   Behavior on opacity {
     NumberAnimation {
-      duration: root.shouldBeActive ? 200 : 500
+      duration: 400
       easing.type: Easing.InOutQuad
     }
+  }
+
+  onTargetOpacityChanged: {
+    opacity = targetOpacity
   }
 
   Component.onCompleted: {
@@ -68,6 +74,23 @@ Loader {
         anchors.fill: parent
         opacity: root.opacity
 
+        // Black overlay that fades out on startup
+        Rectangle {
+          anchors.fill: parent
+          color: "black"
+          opacity: blackFade.opacity
+          
+          OpacityAnimator {
+            id: blackFade
+            target: parent
+            from: 1.0
+            to: 0.0
+            duration: 300
+            running: true
+            easing.type: Easing.OutQuad
+          }
+        }
+
         // Background
         Rectangle {
           anchors.fill: parent
@@ -104,21 +127,6 @@ Loader {
             height: Settings.splashLogoSize
             radius: 20
             imagePath: Quickshell.shellDir + "/Assets/noctalia.svg"
-
-            property real breathScale: 1.0
-            scale: breathScale
-
-            NumberAnimation on breathScale {
-              from: 1.0
-              to: 1.03
-              duration: 1800
-              easing.type: Easing.InOutSine
-              loops: Animation.Infinite
-              
-              onStopped: {
-                breathScale = 1.0
-              }
-            }
           }
 
           // Spinner
@@ -169,34 +177,8 @@ Loader {
               ctx.stroke()
             }
           }
-
-          // Title
-          NText {
-            anchors.top: spinner.bottom
-            anchors.topMargin: 10
-            anchors.horizontalCenter: parent.horizontalCenter
-            text: "Noctalia"
-            pointSize: 32
-            font.weight: Font.Bold
-            color: Color.mOnSurface
-
-            property real breathOpacity: 1.0
-            opacity: breathOpacity
-
-            NumberAnimation on breathOpacity {
-              from: 1.0
-              to: 0.6
-              duration: 1000
-              easing.type: Easing.InOutSine
-              loops: Animation.Infinite
-              
-              onStopped: {
-                breathOpacity = 1.0
-              }
-            }
-          }
+        }
         }
       }
     }
   }
-}
