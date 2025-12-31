@@ -18,7 +18,18 @@ Singleton {
   property bool directoriesCreated: false
   property bool shouldOpenSetupWizard: false
   property bool isFreshInstall: false
+  
+  // Settings.qml
+  //property int splashLogoSize: 250
+  //property int splashSpinnerSize: 250 * 4
+
+  property real splashScale: 1.4   // NEW: master scale for splash screen
+  property int splashLogoSize: 125 * splashScale
+  property int splashSpinnerSize: 125 * 4 * splashScale
+
+
   property bool splashRunning: true
+
 
   /*
   Shell directories.
