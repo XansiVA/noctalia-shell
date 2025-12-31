@@ -20,13 +20,12 @@ Loader {
   active: opacity > 0.0
   opacity: shouldBeActive ? 1.0 : 0.0
 
-Behavior on opacity {
-  NumberAnimation {
-    duration: root.shouldBeActive ? 200 : 500
-    easing.type: Easing.InOutQuad
+  Behavior on opacity {
+    NumberAnimation {
+      duration: root.shouldBeActive ? 200 : 500
+      easing.type: Easing.InOutQuad
+    }
   }
-}
-
 
   Component.onCompleted: {
     Logger.i("StartupScreen", "Startup screen initialized")
@@ -94,41 +93,42 @@ Behavior on opacity {
         // Center content
         Item {
           anchors.centerIn: parent
-          width: 300
-          height: 300
+          width: Math.max(300, Settings.splashSpinnerSize * Settings.splashScale)
+          height: Math.max(300, Settings.splashSpinnerSize * Settings.splashScale)
 
           // Noctalia Logo
           NImageRounded {
+            id: logo
             anchors.centerIn: parent
-            width: 120
-            height: 120
+            width: Settings.splashLogoSize
+            height: Settings.splashLogoSize
             radius: 20
             imagePath: Quickshell.shellDir + "/Assets/noctalia.svg"
-            fallbackIcon: "rocket"
-            fallbackIconSize: 80
 
-            SequentialAnimation on scale {
+            property real breathScale: 1.0
+            scale: breathScale
+
+            NumberAnimation on breathScale {
+              from: 1.0
+              to: 1.03
+              duration: 1800
+              easing.type: Easing.InOutSine
               loops: Animation.Infinite
-              NumberAnimation {
-                to: 1.05
-                duration: 1500
-                easing.type: Easing.InOutQuad
-              }
-              NumberAnimation {
-                to: 1.0
-                duration: 1500
-                easing.type: Easing.InOutQuad
+              
+              onStopped: {
+                breathScale = 1.0
               }
             }
           }
 
           // Spinner
           Canvas {
+            id: spinner
             anchors.centerIn: parent
-            width: 180
-            height: 180
-            antialiasing: true
+            width: Settings.splashSpinnerSize * Settings.splashScale
+            height: Settings.splashSpinnerSize * Settings.splashScale
 
+            antialiasing: true
             property real rotation: 0
 
             RotationAnimator on rotation {
@@ -150,8 +150,8 @@ Behavior on opacity {
 
               var cx = width / 2
               var cy = height / 2
-              var r = 80
-              var lw = 4
+              var r = 80 * Settings.splashScale
+              var lw = 4 * Settings.splashScale
 
               ctx.translate(cx, cy)
               ctx.rotate(rotation * Math.PI / 180)
@@ -172,25 +172,26 @@ Behavior on opacity {
 
           // Title
           NText {
-            anchors.top: parent.verticalCenter
-            anchors.topMargin: 120
+            anchors.top: spinner.bottom
+            anchors.topMargin: 10
             anchors.horizontalCenter: parent.horizontalCenter
             text: "Noctalia"
-            pointSize: Style.fontSizeXL
+            pointSize: 32
             font.weight: Font.Bold
             color: Color.mOnSurface
 
-            SequentialAnimation on opacity {
+            property real breathOpacity: 1.0
+            opacity: breathOpacity
+
+            NumberAnimation on breathOpacity {
+              from: 1.0
+              to: 0.6
+              duration: 1000
+              easing.type: Easing.InOutSine
               loops: Animation.Infinite
-              NumberAnimation {
-                to: 0.6
-                duration: 1200
-                easing.type: Easing.InOutQuad
-              }
-              NumberAnimation {
-                to: 1.0
-                duration: 1200
-                easing.type: Easing.InOutQuad
+              
+              onStopped: {
+                breathOpacity = 1.0
               }
             }
           }
