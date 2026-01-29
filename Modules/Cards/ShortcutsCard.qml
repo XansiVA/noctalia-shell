@@ -12,7 +12,7 @@ RowLayout {
 
   NBox {
     Layout.fillWidth: true
-    Layout.preferredHeight: root.shortcutsHeight
+    Layout.preferredHeight: horizontalLayout ? Math.max(root.shortcutsHeight, root.profileHeight) : root.shortcutsHeight
     visible: Settings.data.controlCenter.shortcuts.left.length > 0
 
     RowLayout {
@@ -52,7 +52,7 @@ RowLayout {
 
   NBox {
     Layout.fillWidth: true
-    Layout.preferredHeight: root.shortcutsHeight
+    Layout.preferredHeight: horizontalLayout ? Math.max(root.shortcutsHeight, root.profileHeight) : root.shortcutsHeight
     visible: Settings.data.controlCenter.shortcuts.right.length > 0
 
     RowLayout {
