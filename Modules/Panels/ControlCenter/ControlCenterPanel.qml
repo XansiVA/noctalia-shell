@@ -12,6 +12,19 @@ import qs.Widgets
 SmartPanel {
   id: root
 
+  // Get horizontal layout setting from Settings
+  readonly property bool horizontalLayout: Settings.data.controlCenter.horizontalLayout
+
+  // Check if media card is enabled (needed for width calculation)
+  readonly property bool hasMediaCard: {
+    for (var i = 0; i < Settings.data.controlCenter.cards.length; i++) {
+      if (Settings.data.controlCenter.cards[i].id === "media-sysmon-card") {
+        return Settings.data.controlCenter.cards[i].enabled;
+      }
+    }
+    return false;
+  }
+
   // Positioning
   readonly property string controlCenterPosition: Settings.data.controlCenter.position
 
@@ -31,42 +44,54 @@ SmartPanel {
   panelAnchorBottom: !shouldCenter && controlCenterPosition !== "close_to_bar_button" && controlCenterPosition.startsWith("bottom_")
   panelAnchorTop: !shouldCenter && controlCenterPosition !== "close_to_bar_button" && controlCenterPosition.startsWith("top_")
 
-  preferredWidth: Math.round(440 * Style.uiScaleRatio)
-  preferredHeight: {
-    var height = 0;
-    var count = 0;
-    for (var i = 0; i < Settings.data.controlCenter.cards.length; i++) {
-      const card = Settings.data.controlCenter.cards[i];
-      if (!card.enabled)
-        continue;
-      const contributes = (card.id !== "weather-card" || Settings.data.location.weatherEnabled);
-      if (!contributes)
-        continue;
-      count++;
-      switch (card.id) {
-      case "profile-card":
-        height += profileHeight;
-        break;
-      case "shortcuts-card":
-        height += shortcutsHeight;
-        break;
-      case "audio-card":
-        height += audioHeight;
-        break;
-      case "brightness-card":
-        height += brightnessHeight;
-        break;
-      case "weather-card":
-        height += weatherHeight;
-        break;
-      case "media-sysmon-card":
-        height += mediaSysMonHeight;
-        break;
-      default:
-        break;
-      }
+  // Adaptive dimensions based on layout orientation
+  preferredWidth: {
+    if (!horizontalLayout) {
+      return Math.round(440 * Style.uiScaleRatio);
     }
-    return height + (count + 1) * Style.marginL;
+    // In horizontal mode, use fixed width because setting it to lower breaks it!
+    return Math.round(800 * Style.uiScaleRatio);
+  }
+
+  preferredHeight: {
+    if (horizontalLayout) {
+      return Math.round(350 * Style.uiScaleRatio);
+    } else {
+      var height = 0;
+      var count = 0;
+      for (var i = 0; i < Settings.data.controlCenter.cards.length; i++) {
+        const card = Settings.data.controlCenter.cards[i];
+        if (!card.enabled)
+          continue;
+        const contributes = (card.id !== "weather-card" || Settings.data.location.weatherEnabled);
+        if (!contributes)
+          continue;
+        count++;
+        switch (card.id) {
+        case "profile-card":
+          height += profileHeight;
+          break;
+        case "shortcuts-card":
+          height += shortcutsHeight;
+          break;
+        case "audio-card":
+          height += audioHeight;
+          break;
+        case "brightness-card":
+          height += brightnessHeight;
+          break;
+        case "weather-card":
+          height += weatherHeight;
+          break;
+        case "media-sysmon-card":
+          height += mediaSysMonHeight;
+          break;
+        default:
+          break;
+        }
+      }
+      return height + (count + 1) * Style.marginL;
+    }
   }
 
   readonly property int profileHeight: Math.round(64 * Style.uiScaleRatio)
@@ -89,8 +114,10 @@ SmartPanel {
   panelContent: Item {
     id: panelContent
 
+    // Vertical Layout (original)
     ColumnLayout {
-      id: layout
+      id: verticalLayout
+      visible: !root.horizontalLayout
       x: Style.marginL
       y: Style.marginL
       width: parent.width - (Style.marginL * 2)
@@ -140,52 +167,250 @@ SmartPanel {
       }
     }
 
-    Component {
-      id: profileCard
-      ProfileCard {}
-    }
+    // Horizontal Layout - Dynamic Grid
+    Item {
+      id: horizontalLayoutContainer
+      visible: root.horizontalLayout
+      anchors.fill: parent
+      anchors.margins: Style.marginL
 
-    Component {
-      id: shortcutsCard
-      ShortcutsCard {}
-    }
+      // Calculate enabled cards
+      readonly property bool hasMedia: getCardEnabled("media-sysmon-card")
+      readonly property bool hasSysmon: getCardEnabled("media-sysmon-card")
+      readonly property bool hasWeather: getCardEnabled("weather-card") && Settings.data.location.weatherEnabled
+      readonly property bool hasAudio: getCardEnabled("audio-card")
+      readonly property bool hasShortcuts: getCardEnabled("shortcuts-card")
+      readonly property bool hasBrightness: getCardEnabled("brightness-card")
+      readonly property bool hasProfile: getCardEnabled("profile-card")
 
-    Component {
-      id: audioCard
-      AudioCard {}
-    }
+      // Count top row items for dynamic width calculation
+      readonly property int topRowCount: (hasShortcuts ? 1 : 0) + (hasProfile ? 1 : 0)
 
-    Component {
-      id: brightnessCard
-      BrightnessCard {}
-    }
+      readonly property int topRowHeight: {
+        if (!topRowCount) return 0;
+        return Math.max(root.shortcutsHeight, root.profileHeight);
+      }
 
-    Component {
-      id: weatherCard
-      WeatherCard {
-        Component.onCompleted: {
-          root.weatherHeight = this.height;
+      // Calculate available width for columns
+      readonly property real mediaWidth: hasMedia ? Math.round(parent.width * 0.30) : 0
+      readonly property real sysmonWidth: hasSysmon ? Math.round(75 * Style.uiScaleRatio) : 0
+
+      // Top Row - Shortcuts and Profile (spans full width including over media area)
+      // Shortcuts - spans from left edge
+      Loader {
+        id: shortcutsLoader
+        active: horizontalLayoutContainer.hasShortcuts
+        visible: active
+        anchors.left: parent.left
+        anchors.top: parent.top
+        width: active ? Math.round(430 * Style.uiScaleRatio) : 0
+        height: horizontalLayoutContainer.topRowHeight
+        sourceComponent: shortcutsCard
+      }
+
+      // Profile Card - fills remaining width to the right
+      Loader {
+        id: profileLoader
+        active: horizontalLayoutContainer.hasProfile
+        visible: active
+        anchors.top: parent.top
+        anchors.right: parent.right
+        anchors.left: shortcutsLoader.active ? shortcutsLoader.right : parent.left
+        anchors.leftMargin: shortcutsLoader.active ? Style.marginL : 0
+        height: horizontalLayoutContainer.topRowHeight
+        sourceComponent: profileCard
+      }
+
+      // Left column - Media Card (starts below shortcuts/profile row)
+      Item {
+        id: mediaColumn
+        anchors.left: parent.left
+        anchors.top: parent.top
+        anchors.topMargin: horizontalLayoutContainer.topRowCount > 0 ? (Math.max(root.shortcutsHeight, root.profileHeight) + Style.marginL) : 0
+        anchors.bottom: parent.bottom
+        width: horizontalLayoutContainer.mediaWidth
+        visible: width > 0
+
+        Loader {
+          active: horizontalLayoutContainer.hasMedia
+          visible: active
+          anchors.fill: parent
+          sourceComponent: mediaCardOnly
         }
       }
-    }
 
-    Component {
-      id: mediaSysMonCard
-      RowLayout {
-        spacing: Style.marginL
+      // Middle column - Weather + Audio/Brightness row
+      Item {
+        id: middleColumn
+        anchors.left: mediaColumn.right
+        anchors.right: parent.right
+        anchors.top: parent.top
+        anchors.topMargin: horizontalLayoutContainer.topRowCount > 0 ? (Math.max(root.shortcutsHeight, root.profileHeight) + Style.marginL) : 0
+        anchors.bottom: parent.bottom
+        anchors.leftMargin: horizontalLayoutContainer.hasMedia ? Style.marginL : 0
+        anchors.rightMargin: (horizontalLayoutContainer.hasSysmon && horizontalLayoutContainer.hasWeather) ? (horizontalLayoutContainer.sysmonWidth + Style.marginL) : 0
 
-        // Media card
-        MediaCard {
-          Layout.fillWidth: true
-          Layout.fillHeight: true
+        // Weather Card - fills remaining space in middle column
+        Loader {
+          id: weatherLoader
+          active: horizontalLayoutContainer.hasWeather
+          visible: active
+          anchors.left: parent.left
+          anchors.right: parent.right
+          anchors.top: parent.top
+          anchors.bottom: audioBrightnessRow.height > 0 ? audioBrightnessRow.top : parent.bottom
+          anchors.bottomMargin: audioBrightnessRow.height > 0 ? Style.marginL : 0
+          sourceComponent: weatherCard
         }
 
-        // System monitors combined in one card
-        SystemMonitorCard {
-          Layout.preferredWidth: Math.round(Style.baseWidgetSize * 2.625)
-          Layout.fillHeight: true
+        // Audio + Brightness Row - at the bottom with reasonable height
+        Row {
+          id: audioBrightnessRow
+          anchors.left: parent.left
+          anchors.right: parent.right
+          anchors.bottom: parent.bottom
+          height: {
+            if (!(horizontalLayoutContainer.hasAudio || horizontalLayoutContainer.hasBrightness)) return 0;
+            return root.audioHeight;
+          }
+          spacing: Style.marginL
+
+          // Audio Card - takes half width if brightness enabled, full width otherwise
+          Loader {
+            id: audioLoader
+            active: horizontalLayoutContainer.hasAudio
+            visible: active
+            width: {
+              if (!active) return 0;
+              if (brightnessLoader.active) {
+                return (parent.width - Style.marginL) / 2;
+              }
+              return parent.width;
+            }
+            height: parent.height
+            sourceComponent: audioCard
+          }
+
+          // Brightness Card - takes half width when both enabled
+          Loader {
+            id: brightnessLoader
+            active: horizontalLayoutContainer.hasBrightness
+            visible: active
+            width: {
+              if (!active) return 0;
+              if (audioLoader.active) {
+                return (parent.width - Style.marginL) / 2;
+              }
+              return parent.width;
+            }
+            height: parent.height
+            sourceComponent: brightnessCard
+          }
         }
       }
+
+      // Right column - System Monitor (vertical mode when weather exists)
+      Item {
+        id: sysmonColumn
+        visible: horizontalLayoutContainer.hasSysmon && horizontalLayoutContainer.hasWeather
+        anchors.right: parent.right
+        anchors.top: parent.top
+        anchors.bottom: parent.bottom
+        anchors.topMargin: horizontalLayoutContainer.topRowCount > 0 ? (Math.max(root.shortcutsHeight, root.profileHeight) + Style.marginL) : 0
+        width: horizontalLayoutContainer.sysmonWidth
+
+        Loader {
+          active: horizontalLayoutContainer.hasSysmon && horizontalLayoutContainer.hasWeather
+          visible: active
+          anchors.fill: parent
+          sourceComponent: systemMonitorOnly
+        }
+      }
+
+      // System Monitor Horizontal - spans below top row when no weather
+      Loader {
+        id: sysmonHorizontal
+        active: horizontalLayoutContainer.hasSysmon && !horizontalLayoutContainer.hasWeather
+        visible: active
+        anchors.left: horizontalLayoutContainer.hasMedia ? mediaColumn.right : parent.left
+        anchors.leftMargin: horizontalLayoutContainer.hasMedia ? Style.marginL : 0
+        anchors.right: parent.right
+        anchors.top: parent.top
+        anchors.topMargin: (horizontalLayoutContainer.topRowCount > 0 ? Math.max(root.shortcutsHeight, root.profileHeight) : 0) + Style.marginL
+        anchors.bottom: parent.bottom
+        anchors.bottomMargin: (horizontalLayoutContainer.hasAudio || horizontalLayoutContainer.hasBrightness) ? (root.audioHeight + Style.marginL) : 0
+        sourceComponent: systemMonitorOnly
+      }
     }
+  }
+
+  // Helper function to check if a card is enabled
+  function getCardEnabled(cardId) {
+    for (var i = 0; i < Settings.data.controlCenter.cards.length; i++) {
+      if (Settings.data.controlCenter.cards[i].id === cardId) {
+        return Settings.data.controlCenter.cards[i].enabled;
+      }
+    }
+    return false;
+  }
+
+  Component {
+    id: profileCard
+    ProfileCard {}
+  }
+
+  Component {
+    id: shortcutsCard
+    ShortcutsCard {}
+  }
+
+  Component {
+    id: audioCard
+    AudioCard {}
+  }
+
+  Component {
+    id: brightnessCard
+    BrightnessCard {}
+  }
+
+  Component {
+    id: weatherCard
+    WeatherCard {
+      Component.onCompleted: {
+        root.weatherHeight = this.height;
+      }
+    }
+  }
+
+  Component {
+    id: mediaSysMonCard
+    RowLayout {
+      spacing: Style.marginL
+
+      // Media card
+      MediaCard {
+        Layout.fillWidth: true
+        Layout.fillHeight: true
+      }
+
+      // System monitors combined in one card
+      SystemMonitorCard {
+        Layout.preferredWidth: Math.round(Style.baseWidgetSize * 2.625)
+        Layout.fillHeight: true
+      }
+    }
+  }
+
+  // Media card only (for horizontal layout)
+  Component {
+    id: mediaCardOnly
+    MediaCard {}
+  }
+
+  // System monitor only (for horizontal layout)
+  Component {
+    id: systemMonitorOnly
+    SystemMonitorCard {}
   }
 }
