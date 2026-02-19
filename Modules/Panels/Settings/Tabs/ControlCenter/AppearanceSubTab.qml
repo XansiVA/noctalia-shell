@@ -63,6 +63,16 @@ ColumnLayout {
       defaultValue: Settings.getDefaultValue("controlCenter.position")
     }
 
+    NToggle {
+      id: horizontalLayoutToggle
+      Layout.fillWidth: true
+      label: I18n.tr("panels.control-center.horizontal-layout-label")
+      description: I18n.tr("panels.control-center.horizontal-layout-description")
+      checked: Settings.data.controlCenter.horizontalLayout
+      onToggled: Settings.data.controlCenter.horizontalLayout = checked
+      defaultValue: Settings.getDefaultValue("controlCenter.horizontalLayout")
+    }
+
     NComboBox {
       id: diskPathComboBox
       Layout.fillWidth: true
