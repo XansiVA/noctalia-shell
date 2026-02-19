@@ -287,7 +287,6 @@ Singleton {
       property bool allowPasswordWithFprintd: false
       property string clockStyle: "custom"
       property string clockFormat: "hh\\nmm"
-      property bool passwordChars: false
       property list<string> lockScreenMonitors: [] // holds lock screen visibility per monitor
       property real lockScreenBlur: 0.0
       property real lockScreenTint: 0.0
@@ -434,6 +433,7 @@ Singleton {
     property JsonObject controlCenter: JsonObject {
       // Position: close_to_bar_button, center, top_left, top_right, bottom_left, bottom_right, bottom_center, top_center
       property string position: "close_to_bar_button"
+      property bool horizontalLayout: true  // Toggle between horizontal and vertical layouts
       property string diskPath: "/"
       property JsonObject shortcuts
       shortcuts: JsonObject {
@@ -592,11 +592,6 @@ Singleton {
           "action": "shutdown",
           "enabled": true,
           "keybind": "6"
-        },
-        {
-          "action": "rebootToUefi",
-          "enabled": true,
-          "keybind": "7"
         }
       ]
     }
