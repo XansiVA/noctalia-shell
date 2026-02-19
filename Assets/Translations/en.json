@@ -939,6 +939,8 @@
       "shortcuts-title": "Shortcuts widgets",
       "system-monitor-disk-path-description": "Select which disk mount point the system monitor card in the control center should monitor.",
       "system-monitor-disk-path-label": "System monitor disk path",
+      "horizontal-layout-description": "Toggle between horizontal and vertical layouts.",
+      "horizontal-layout-label": "Horizontal layout",
       "title": "Control Center"
     },
     "desktop-widgets": {
